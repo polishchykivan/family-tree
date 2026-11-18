@@ -938,7 +938,7 @@ function PersonModal({
       role="presentation"
     >
       <div
-        className="relative w-full max-w-md mx-4 rounded-2xl bg-slate-950 border border-slate-700 shadow-2xl shadow-black/60 p-4 text-[12px]"
+        className="relative w-full max-w-md mx-2 sm:mx-4 rounded-2xl bg-slate-950 border border-slate-700 shadow-2xl shadow-black/60 p-3 sm:p-4 text-[12px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
