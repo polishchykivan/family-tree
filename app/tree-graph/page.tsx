@@ -43,6 +43,16 @@ export default function TreeGraphPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasInitialCentered, setHasInitialCentered] = useState(false);
 
+  // для мобільного touch‑пану/зуму
+  const [isTouchPanning, setIsTouchPanning] = useState(false);
+  const [touchPanStart, setTouchPanStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(
+    null
+  );
+
   const t = (uk: string, en: string) => (lang === "uk" ? uk : en);
 
   useEffect(() => {
@@ -279,17 +289,24 @@ export default function TreeGraphPage() {
 
     const shiftLeft106 = -120;
     extended = extended.map((node) =>
-      descendantsOf106.has(node.id) ? { ...node, x: node.x + shiftLeft106 } : node
+      descendantsOf106.has(node.id)
+        ? { ...node, x: node.x + shiftLeft106 }
+        : node
     );
 
     // Діти Петра (p111) та Афанасії (p112) — ширше
     const childrenOf111 = byIdFull["p111"]?.children ?? [];
     const childrenOf112 = byIdFull["p112"]?.children ?? [];
-    const targetChildren = new Set<string>([...childrenOf111, ...childrenOf112]);
+    const targetChildren = new Set<string>([
+      ...childrenOf111,
+      ...childrenOf112,
+    ]);
 
     const shiftChildrenLeft = -200;
     extended = extended.map((node) =>
-      targetChildren.has(node.id) ? { ...node, x: node.x + shiftChildrenLeft } : node
+      targetChildren.has(node.id)
+        ? { ...node, x: node.x + shiftChildrenLeft }
+        : node
     );
 
     const childrenNodes = extended.filter((n) => targetChildren.has(n.id));
@@ -413,7 +430,7 @@ export default function TreeGraphPage() {
     return m;
   }, [extendedNodes]);
 
-  // ---- 6. Зум / панорамування ----
+  // ---- 6. Зум / панорамування (миша + колесо) ----
   const applyZoom = (value: number) =>
     Math.min(2, Math.max(0.3, Math.round(value * 10) / 10));
 
@@ -432,7 +449,7 @@ export default function TreeGraphPage() {
     setPan({ x: 0, y: 0 });
   };
 
-  // Зум під курсором
+  // Зум під курсором (колесо миші)
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (event) => {
     if (event.ctrlKey) return;
     event.preventDefault();
@@ -472,6 +489,70 @@ export default function TreeGraphPage() {
     setPanStart(null);
   };
 
+  // ---- 6b. Жести на мобільному (touch) ----
+  const handleTouchStart: React.TouchEventHandler<HTMLDivElement> = (event) => {
+    if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      setIsTouchPanning(true);
+      setTouchPanStart({
+        x: touch.clientX - pan.x,
+        y: touch.clientY - pan.y,
+      });
+      setLastTouchDistance(null);
+    } else if (event.touches.length === 2) {
+      const touches = Array.from(event.touches);
+      const t1 = touches[0];
+      const t2 = touches[1];
+      const dx = t2.clientX - t1.clientX;
+      const dy = t2.clientY - t1.clientY;
+      const distance = Math.hypot(dx, dy);
+      setLastTouchDistance(distance);
+      setIsTouchPanning(false);
+      setTouchPanStart(null);
+    }
+  };
+
+  const handleTouchMove: React.TouchEventHandler<HTMLDivElement> = (event) => {
+    if (event.touches.length === 1 && isTouchPanning && touchPanStart) {
+      const touch = event.touches[0];
+      const newX = touch.clientX - touchPanStart.x;
+      const newY = touch.clientY - touchPanStart.y;
+      setPan({ x: newX, y: newY });
+    } else if (event.touches.length === 2 && lastTouchDistance !== null) {
+      event.preventDefault();
+
+      const touches = Array.from(event.touches);
+      const t1 = touches[0];
+      const t2 = touches[1];
+      const dx = t2.clientX - t1.clientX;
+      const dy = t2.clientY - t1.clientY;
+      const distance = Math.hypot(dx, dy);
+      if (distance === 0) return;
+
+      const scaleChange = distance / lastTouchDistance;
+      const newZoom = applyZoom(zoom * scaleChange);
+
+      const pinchCenterX = (t1.clientX + t2.clientX) / 2;
+      const pinchCenterY = (t1.clientY + t2.clientY) / 2;
+
+      const treeX = (pinchCenterX - pan.x) / zoom;
+      const treeY = (pinchCenterY - pan.y) / zoom;
+
+      const newPanX = pinchCenterX - treeX * newZoom;
+      const newPanY = pinchCenterY - treeY * newZoom;
+
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+      setLastTouchDistance(distance);
+    }
+  };
+
+  const handleTouchEnd: React.TouchEventHandler<HTMLDivElement> = () => {
+    setIsTouchPanning(false);
+    setTouchPanStart(null);
+    setLastTouchDistance(null);
+  };
+
   const selectedNode = selectedId ? nodeById[selectedId] || null : null;
 
   // ---- 7. Початкове автоцентрування по p101 ----
@@ -503,7 +584,7 @@ export default function TreeGraphPage() {
   }, [extendedNodes, hasInitialCentered]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
+    <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col touch-none">
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -587,12 +668,16 @@ export default function TreeGraphPage() {
       {/* Полотно */}
       <section className="flex-1 px-0 py-4 sm:px-4 sm:py-6">
         <div
-          className="w-full h-[calc(100vh-80px)] sm:h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900/70 overflow-hidden cursor-grab active:cursor-grabbing"
+          className="w-full h-[calc(100vh-80px)] sm:h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900/70 overflow-hidden cursor-grab active:cursor-grabbing touch-none"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={stopPanning}
           onMouseLeave={stopPanning}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
         >
           <div
             style={{
