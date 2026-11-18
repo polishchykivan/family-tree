@@ -43,7 +43,7 @@ export default function TreeGraphPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasInitialCentered, setHasInitialCentered] = useState(false);
 
-  // для мобільного touch‑пану/зуму
+  // touch
   const [isTouchPanning, setIsTouchPanning] = useState(false);
   const [touchPanStart, setTouchPanStart] = useState<{
     x: number;
@@ -368,7 +368,6 @@ export default function TreeGraphPage() {
         return { ...n, x: n.x - 360 };
       }
       if (n.id === "p134") {
-        // було -240, тепер правіше на 100 => -140 відносно бази
         return { ...n, x: n.x - 140 };
       }
       return n;
@@ -430,7 +429,7 @@ export default function TreeGraphPage() {
     return m;
   }, [extendedNodes]);
 
-  // ---- 6. Зум / панорамування (миша + колесо) ----
+  // ---- 6. Зум / панорамування (миша) ----
   const applyZoom = (value: number) =>
     Math.min(2, Math.max(0.3, Math.round(value * 10) / 10));
 
@@ -449,7 +448,6 @@ export default function TreeGraphPage() {
     setPan({ x: 0, y: 0 });
   };
 
-  // Зум під курсором (колесо миші)
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (event) => {
     if (event.ctrlKey) return;
     event.preventDefault();
@@ -489,7 +487,7 @@ export default function TreeGraphPage() {
     setPanStart(null);
   };
 
-  // ---- 6b. Жести на мобільному (touch) ----
+  // ---- 6b. Жести touch ----
   const handleTouchStart: React.TouchEventHandler<HTMLDivElement> = (event) => {
     if (event.touches.length === 1) {
       const touch = event.touches[0];
@@ -584,7 +582,7 @@ export default function TreeGraphPage() {
   }, [extendedNodes, hasInitialCentered]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col touch-none">
+    <main className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -668,7 +666,7 @@ export default function TreeGraphPage() {
       {/* Полотно */}
       <section className="flex-1 px-0 py-4 sm:px-4 sm:py-6">
         <div
-          className="w-full h-[calc(100vh-80px)] sm:h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900/70 overflow-hidden cursor-grab active:cursor-grabbing touch-none"
+          className="w-full h-[calc(100vh-80px)] sm:h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900/70 overflow-hidden cursor-grab active:cursor-grabbing"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
