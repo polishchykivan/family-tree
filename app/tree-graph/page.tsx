@@ -664,9 +664,9 @@ export default function TreeGraphPage() {
       </header>
 
       {/* Полотно */}
-      <section className="flex-1 px-0 py-4 sm:px-4 sm:py-6">
+      <section className="flex-1 px-0 pb-4 sm:px-4 sm:pb-6 pt-2">
         <div
-          className="w-full h-[calc(100vh-80px)] sm:h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900/70 overflow-hidden cursor-grab active:cursor-grabbing"
+          className="w-full h-[calc(100vh-96px)] border-t border-slate-800 bg-slate-900 overflow-hidden cursor-grab active:cursor-grabbing"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -686,11 +686,7 @@ export default function TreeGraphPage() {
               transition: isPanning ? "none" : "transform 0.15s ease-out",
             }}
           >
-            <svg
-              width={canvasWidth}
-              height={canvasHeight}
-              className="bg-slate-900"
-            >
+            <svg width={canvasWidth} height={canvasHeight} className="block">
               {/* Лінії батьки–діти */}
               <g stroke="#4ade80" strokeWidth={1} strokeOpacity={0.6}>
                 {extendedNodes.map((childNode) => {
